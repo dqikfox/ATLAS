@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.so
+
+# Environments
+venv/
+.env/
+.venv/
+env/
+
+# pip stray files (created when using pip install pkg>=version syntax incorrectly)
+=*
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDEs
+.vscode/
+.idea/
+
+# Models (large binary files)
+models/
+
+# macOS
+.DS_Store

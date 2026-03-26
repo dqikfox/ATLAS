@@ -1,52 +1,153 @@
-# Ultron
+# ATLAS – AI Assistant
 
-Ultron is a lightweight template for building Python-based services or command-line applications. This repository intentionally starts with a minimal structure so that you can grow it into whatever you need. Below you'll find documentation on how to get started developing, running locally, and deploying your application.
+ATLAS is a Python-based AI assistant with a full-featured **web UI** for chatting with local or API-backed language models.  It ships with built-in tools (file system, OCR, shell execution) accessible through a clean dark-themed interface with voice input/output support.
 
-## What’s Included
+## Features
 
-This repository includes the following components out of the box:
+| Capability | Details |
+|---|---|
+| 💬 **Chat** | Streams responses from any llama.cpp model or OpenAI-compatible API (Ollama, LM Studio, etc.) |
+| 🔍 **OCR** | Drag-and-drop image → extracted text via pytesseract / easyocr, insertable into chat |
+| 📁 **File browser** | Browse, read, and write files within a sandboxed root directory |
+| 🎤 **Voice input (STT)** | Browser Web Speech API (Chrome/Edge) or server-side Whisper transcription |
+| 🔊 **Voice output (TTS)** | Browser `speechSynthesis` API; falls back to pyttsx3 / gTTS on the server |
+| ⚙ **Tools / MCP** | Tool registry that the model can call (fs_list, fs_read, fs_write, shell_run, python_eval, ocr_extract) |
+| 🖥 **Shell / Code eval** | Model can run shell commands and evaluate Python snippets with built-in safety guard-list |
 
-- **`main.py`** – A simple entry point script that prints a greeting. Replace this with your own application code.
-- **`requirements.txt`** – A list of Python dependencies. Add any packages your project requires here so that they’re installed automatically when you build or deploy.
-- **`deployment/`** – Deployment tooling including a Dockerfile and a README with build/run instructions. Use this folder if you wish to containerise your application.
-- **`.gitignore`** – Standard git ignore rules for Python to keep compiled files and caches out of version control.
+## Quick start
 
-## Getting Started
+```bash
+python -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-1. **Install Dependencies**
+### Start the web server
 
-   Create a virtual environment and install the Python packages listed in `requirements.txt`:
+```bash
+python web/app.py
+```
 
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
+Then open **http://localhost:5000** in your browser.
 
-2. **Run the Application**
+> Optional environment variables:
+> | Variable | Default | Description |
+> |---|---|---|
+> | `ATLAS_PORT` | `5000` | Port the server listens on |
+> | `ATLAS_DEBUG` | `0` | Set to `1` for Flask debug mode |
+> | `ATLAS_SECRET_KEY` | random | Flask session secret key |
+> | `ATLAS_SHELL_UNRESTRICTED` | `0` | Set to `1` to disable shell command block-list |
 
-   Execute the entry point script:
+### Configure the model backend
 
-   ```bash
-   python main.py
-   ```
+Edit `ultron_config.json`.  The file is base64-encoded JSON:
 
-   You should see the message `Hello from Ultron!` printed to the console. You can modify `main.py` to perform whatever functionality your application requires.
+**Local llama.cpp model** (default):
+```json
+{
+  "offline_mode": true,
+  "models": {
+    "llm": { "type": "llama_cpp", "path": "models/llama-7b.Q4_K_M.gguf" },
+    "stt": { "type": "whisper", "model": "base" }
+  }
+}
+```
 
-3. **Add Your Code**
+**OpenAI-compatible API (e.g. Ollama)**:
+```json
+{
+  "offline_mode": false,
+  "models": {
+    "llm": {
+      "type": "openai_compatible",
+      "base_url": "http://localhost:11434/v1",
+      "model": "llama3",
+      "api_key": "ollama"
+    },
+    "stt": { "type": "whisper", "model": "base" }
+  }
+}
+```
 
-   Replace the contents of `main.py` with your own logic. Add new modules and packages as necessary, and don’t forget to update `requirements.txt` when adding third‑party dependencies.
+Re-encode with:
+```bash
+python3 -c "import base64, json, pathlib; \
+  cfg = json.load(open('my_config.json')); \
+  pathlib.Path('ultron_config.json').write_text(base64.b64encode(json.dumps(cfg).encode()).decode())"
+```
 
-## Development Tips
+## UI Layout
 
-- **Use virtual environments** to isolate dependencies.
-- **Write unit tests** and consider integrating a continuous integration (CI) workflow (e.g. GitHub Actions) to automatically run tests when you push changes.
-- **Document your code** and usage patterns in this README so that others can understand your project quickly.
-- **Keep your deployment files up to date.** If you add dependencies or change the entry point, make sure `Dockerfile` and the deployment instructions reflect those changes.
+```
+┌──────────────────────────────────────────────────────┐
+│  ☰  [ATLAS]  8 tools ready        [🗑 Clear] [⊞]    │  ← Topbar
+├─────────────┬───────────────────────────┬────────────┤
+│  📁 Files   │                           │  🔍 OCR    │
+│  ⚙ Tools   │   Chat messages           │  ⚙ Config  │
+│             │                           │            │
+│  [sidebar]  │   ┌─ bot bubble ──────┐   │  [panels]  │
+│             │   │ Hello! I'm ATLAS… │   │            │
+│  fs browser │   └───────────────────┘   │  drop zone │
+│  tool cards │                           │  OCR text  │
+│             │   [📎] [textarea] [🎤][➤] │            │
+└─────────────┴───────────────────────────┴────────────┘
+```
 
-## Docker Deployment
+## REST API
 
-If you would like to run your application inside a Docker container, follow the instructions in `deployment/README.md`. The provided `Dockerfile` will install dependencies from `requirements.txt` and run `main.py` by default. After modifying `main.py` or `requirements.txt`, rebuild the Docker image to ensure your changes are reflected in the container.
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/` | Web UI |
+| `POST` | `/api/chat` | Chat (supports tool calls) |
+| `GET` | `/api/chat/stream` | SSE streaming chat |
+| `POST` | `/api/ocr` | OCR image → text |
+| `GET` | `/api/fs/list?path=…` | List directory |
+| `GET` | `/api/fs/read?path=…` | Read file |
+| `POST` | `/api/fs/write` | Write file |
+| `POST` | `/api/stt` | Speech-to-text (audio file) |
+| `POST` | `/api/tts` | Text-to-speech |
+| `GET` | `/api/tools` | List available tools |
+| `POST` | `/api/tools/call` | Call a tool by name |
+
+## Project structure
+
+```
+web/
+  app.py               Flask application
+  templates/index.html Chat UI
+  static/css/style.css Dark-themed stylesheet
+  static/js/app.js     Frontend JavaScript
+
+ultron/
+  ai/offline.py        Local model loader (llama.cpp / Whisper)
+  config.py            Config loader
+  tts.py               Server-side TTS helper
+  tools/
+    __init__.py        MCP-style tool registry
+    fs.py              File-system tools
+    ocr.py             OCR tool
+    shell.py           Shell / Python execution tool
+
+tests/
+  test_web_ui.py       Test suite for web UI + tools
+
+requirements.txt       Python dependencies
+ultron_config.json     Base64-encoded model configuration
+```
+
+## Running tests
+
+```bash
+pip install pytest
+pytest tests/ -v
+```
+
+## Docker
+
+```bash
+docker build -t atlas .
+docker run -p 5000:5000 atlas
+```
 
 ## Contributing
 

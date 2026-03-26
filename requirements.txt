@@ -2,3 +2,13 @@ llama-cpp-python
 transformers
 whisper
 vosk
+# Web UI
+flask>=3.1.0
+# OCR
+Pillow>=12.1.1
+pytesseract>=0.3.13
+# OpenAI-compatible API support (Ollama, LM Studio, etc.)
+openai>=1.109.1
+# TTS backends (install at least one)
+pyttsx3>=2.99
+gtts>=2.5.4
