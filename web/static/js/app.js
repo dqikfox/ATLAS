@@ -383,8 +383,11 @@ async function transcribeAudio(blob) {
 
 // ── Voice output (TTS) ────────────────────────────────────────────────────────
 function speakText(text) {
-  // Strip markdown for speech
-  const plain = text.replace(/[*_`#\[\]]/g, "").replace(/<[^>]+>/g, "");
+  // Strip markdown characters, then use DOMParser to safely extract plain text
+  // (avoids regex-based HTML sanitization which can leave partial tags intact).
+  const noMarkdown = text.replace(/[*_`#\[\]]/g, "");
+  const doc = new DOMParser().parseFromString(noMarkdown, "text/html");
+  const plain = doc.body.textContent || "";
 
   if ("speechSynthesis" in window) {
     window.speechSynthesis.cancel();
