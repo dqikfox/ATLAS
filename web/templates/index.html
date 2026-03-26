@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATLAS – AI Assistant</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+<!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
+<aside id="sidebar">
+  <div id="sidebar-header">
+    <div>
+      <div class="logo">ATLAS</div>
+      <div class="tagline">AI Assistant</div>
+    </div>
+  </div>
+
+  <div id="sidebar-tabs">
+    <button class="sidebar-tab active" data-tab="files">📁 Files</button>
+    <button class="sidebar-tab" data-tab="tools">⚙ Tools</button>
+  </div>
+
+  <!-- File browser panel -->
+  <div class="sidebar-panel active" id="panel-files">
+    <div id="fs-path-bar">
+      <input id="fs-path-input" type="text" value="." placeholder="Path…" autocomplete="off" />
+      <button id="fs-go-btn">Go</button>
+    </div>
+    <div id="fs-list"></div>
+  </div>
+
+  <!-- Tools panel -->
+  <div class="sidebar-panel" id="panel-tools">
+    <div id="tools-list"></div>
+  </div>
+</aside>
+
+<!-- ── Main ─────────────────────────────────────────────────────────────── -->
+<main id="main">
+
+  <!-- Topbar -->
+  <header id="topbar">
+    <button id="sidebar-toggle" title="Toggle sidebar">☰</button>
+    <span id="model-badge">ATLAS</span>
+    <span class="topbar-spacer"></span>
+    <button class="topbar-btn" id="clear-chat-btn" title="Clear conversation">🗑 Clear</button>
+    <button class="topbar-btn" id="right-toggle" title="Toggle panels">⊞</button>
+  </header>
+
+  <!-- Chat messages -->
+  <div id="chat-messages" role="log" aria-live="polite" aria-label="Chat conversation"></div>
+
+  <!-- Input area -->
+  <div id="input-area">
+    <div id="input-options">
+      <label class="toggle-label">
+        <input type="checkbox" id="tools-toggle" checked />
+        Enable tools
+      </label>
+      <label class="toggle-label">
+        <input type="checkbox" id="voice-toggle" />
+        Read replies aloud
+      </label>
+    </div>
+    <div id="input-row">
+      <button class="action-btn" id="attach-btn" title="Attach file / image for OCR">📎</button>
+      <input type="file" id="attach-input" style="display:none" accept="*/*" />
+      <textarea
+        id="msg-input"
+        placeholder="Message ATLAS… (Shift+Enter for newline)"
+        rows="1"
+        autocomplete="off"
+        spellcheck="true"
+        aria-label="Chat message input"
+      ></textarea>
+      <button class="action-btn" id="voice-btn" title="Voice input">🎤</button>
+      <button class="action-btn" id="send-btn" title="Send (Enter)">➤</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Right panel ────────────────────────────────────────────────────────── -->
+<aside id="right-panel" class="hidden">
+
+  <div id="right-tabs">
+    <button class="right-tab active" data-tab="ocr">🔍 OCR</button>
+    <button class="right-tab" data-tab="settings">⚙ Config</button>
+  </div>
+
+  <!-- OCR panel -->
+  <div class="right-panel-body active" id="rpanel-ocr">
+    <div id="ocr-drop-zone">
+      <div class="dz-icon">🖼</div>
+      <div>Drop an image here or click to browse</div>
+      <div class="muted" style="margin-top:4px">Supports PNG, JPG, TIFF, BMP</div>
+    </div>
+    <img id="ocr-preview" alt="OCR preview" />
+    <div id="ocr-result-box">OCR text will appear here…</div>
+    <button class="panel-btn primary" id="ocr-run-btn">🔍 Extract Text</button>
+    <button class="panel-btn" id="ocr-insert-btn">↩ Insert into chat</button>
+  </div>
+
+  <!-- Settings panel -->
+  <div class="right-panel-body" id="rpanel-settings">
+    <div class="settings-group">
+      <label for="setting-model-type">Backend</label>
+      <select id="setting-model-type">
+        <option value="llama_cpp">llama.cpp (local)</option>
+        <option value="openai_compatible">OpenAI-compatible API</option>
+      </select>
+    </div>
+    <div class="settings-group">
+      <label for="setting-base-url">API Base URL</label>
+      <input id="setting-base-url" type="text" placeholder="http://localhost:11434/v1" />
+    </div>
+    <div class="settings-group">
+      <label for="setting-model-name">Model name</label>
+      <input id="setting-model-name" type="text" placeholder="llama3" />
+    </div>
+    <div class="settings-group">
+      <label for="setting-api-key">API key</label>
+      <input id="setting-api-key" type="password" placeholder="sk-… (or 'ollama')" autocomplete="off" />
+    </div>
+    <div class="muted" style="margin-bottom:10px">
+      Settings are saved locally.  Update <code>ultron_config.json</code> and
+      restart the server for backend changes to take effect.
+    </div>
+    <button class="panel-btn primary" id="settings-save">💾 Save settings</button>
+  </div>
+
+</aside>
+
+<!-- ── Modal ──────────────────────────────────────────────────────────────── -->
+<div id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div id="modal">
+    <h3 id="modal-title">File viewer</h3>
+    <div id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="panel-btn" id="modal-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
