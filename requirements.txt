@@ -1,4 +1,28 @@
+# ── Required by existing ultron modules ──────────────────────────────────────
 llama-cpp-python
 transformers
 whisper
 vosk
+
+# ── ATLAS core ────────────────────────────────────────────────────────────────
+python-dotenv>=1.2.2
+
+# ── LangChain ─────────────────────────────────────────────────────────────────
+langchain>=1.2.13
+langchain-core>=0.3.0
+langchain-openai>=1.1.12
+langchain-ollama>=1.0.1
+langchain-community>=0.4.1
+
+# ── Model providers ───────────────────────────────────────────────────────────
+openai>=1.0.0
+
+# ollama Python client (optional – required when ATLAS_MODEL_PROVIDER=ollama)
+ollama>=0.6.1
+
+# ── Computer control ──────────────────────────────────────────────────────────
+pyautogui>=0.9.54
+
+# ── MCP (Model Context Protocol) ─────────────────────────────────────────────
+mcp>=1.26.0
+websockets>=12.0
