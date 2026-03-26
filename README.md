@@ -1,53 +1,195 @@
-# Ultron
+# ATLAS
 
-Ultron is a lightweight template for building Python-based services or command-line applications. This repository intentionally starts with a minimal structure so that you can grow it into whatever you need. Below you'll find documentation on how to get started developing, running locally, and deploying your application.
+ATLAS is an AI-powered **computer-using agent** that can see your screen,
+move the mouse, type, run commands, and complete complex multi-step tasks –
+all orchestrated by a large language model.
 
-## What’s Included
+## Architecture
 
-This repository includes the following components out of the box:
+```
+ATLAS
+├── atlas/
+│   ├── agent.py          # LangChain tool-calling agent
+│   ├── config.py         # Config (model provider, keys, safety settings)
+│   ├── models/
+│   │   └── factory.py    # OpenAI / Ollama model factory
+│   ├── tools/
+│   │   ├── computer.py   # PyAutoGUI computer-control tools
+│   │   └── mcp_client.py # MCP client – load tools from an MCP server
+│   └── mcp/
+│       └── server.py     # Native MCP server (exposes ATLAS tools)
+└── main.py               # CLI entry point
+```
 
-- **`main.py`** – A simple entry point script that prints a greeting. Replace this with your own application code.
-- **`requirements.txt`** – A list of Python dependencies. Add any packages your project requires here so that they’re installed automatically when you build or deploy.
-- **`deployment/`** – Deployment tooling including a Dockerfile and a README with build/run instructions. Use this folder if you wish to containerise your application.
-- **`.gitignore`** – Standard git ignore rules for Python to keep compiled files and caches out of version control.
+### Key integrations
+
+| Component | Role |
+|-----------|------|
+| **LangChain** | Agent orchestration, tool routing, prompt management |
+| **OpenAI** | Default LLM (GPT-4o) |
+| **Ollama** | Optional local LLM (llama3.2, mistral, …) |
+| **PyAutoGUI** | Computer control – screenshot, click, type, scroll, hotkeys |
+| **MCP (native server)** | Exposes ATLAS tools as an MCP server (stdio transport) |
+| **MCP (client)** | Connects to external MCP servers and adds their tools to the agent |
+
+---
 
 ## Getting Started
 
-1. **Install Dependencies**
+### 1. Install dependencies
 
-   Create a virtual environment and install the Python packages listed in `requirements.txt`:
+```bash
+python -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
+### 2. Configure
 
-2. **Run the Application**
+Copy the example environment file and fill in your values:
 
-   Execute the entry point script:
+```bash
+cp .env.example .env
+```
 
-   ```bash
-   python main.py
-   ```
+At a minimum set your **OpenAI API key** (or configure Ollama – see below):
 
-   You should see the message `Hello from Ultron!` printed to the console. You can modify `main.py` to perform whatever functionality your application requires.
+```
+OPENAI_API_KEY=sk-...
+```
 
-3. **Add Your Code**
+### 3. Run ATLAS
 
-   Replace the contents of `main.py` with your own logic. Add new modules and packages as necessary, and don’t forget to update `requirements.txt` when adding third‑party dependencies.
+**Interactive shell** (default):
 
-## Development Tips
+```bash
+python main.py
+```
 
-- **Use virtual environments** to isolate dependencies.
-- **Write unit tests** and consider integrating a continuous integration (CI) workflow (e.g. GitHub Actions) to automatically run tests when you push changes.
-- **Document your code** and usage patterns in this README so that others can understand your project quickly.
-- **Keep your deployment files up to date.** If you add dependencies or change the entry point, make sure `Dockerfile` and the deployment instructions reflect those changes.
+**Single task**:
 
-## Docker Deployment
+```bash
+python main.py --task "Open a terminal and print the current date"
+```
 
-If you would like to run your application inside a Docker container, follow the instructions in `deployment/README.md`. The provided `Dockerfile` will install dependencies from `requirements.txt` and run `main.py` by default. After modifying `main.py` or `requirements.txt`, rebuild the Docker image to ensure your changes are reflected in the container.
+**Verbose mode** (shows LangChain reasoning steps):
 
-## Contributing
+```bash
+python main.py --verbose
+```
 
-Pull requests are welcome! If you find issues or have suggestions for improvements, feel free to open an issue or submit a pull request.
+---
+
+## Switching model providers
+
+ATLAS defaults to **OpenAI** (`gpt-4o`). Switch to Ollama with environment
+variables or the `--provider` / `--model` flags:
+
+### Via environment variables
+
+```bash
+# .env
+ATLAS_MODEL_PROVIDER=ollama
+OLLAMA_MODEL=llama3.2
+OLLAMA_BASE_URL=http://localhost:11434
+```
+
+### Via CLI flags
+
+```bash
+python main.py --provider ollama --model llama3.2
+python main.py --provider openai  --model gpt-4-turbo
+```
+
+### Supported providers
+
+| Provider | `ATLAS_MODEL_PROVIDER` | Required env var |
+|----------|------------------------|-----------------|
+| OpenAI   | `openai` (default)     | `OPENAI_API_KEY` |
+| Ollama   | `ollama`               | Ollama running at `OLLAMA_BASE_URL` |
+
+---
+
+## MCP integration
+
+### Run ATLAS as an MCP server
+
+Expose ATLAS computer-control tools to any MCP-compatible client (e.g. VS
+Code GitHub Copilot, Claude Desktop):
+
+```bash
+python main.py --mcp-server
+```
+
+This starts an **stdio MCP server**. Add it to your MCP client config:
+
+```json
+{
+  "mcpServers": {
+    "atlas": {
+      "command": "python",
+      "args": ["main.py", "--mcp-server"]
+    }
+  }
+}
+```
+
+### Connect ATLAS to an external MCP server
+
+Load tools from a running MCP server and make them available to the agent:
+
+```bash
+python main.py --mcp-client ws://localhost:8765
+```
+
+---
+
+## Computer-control tools
+
+| Tool | Description |
+|------|-------------|
+| `take_screenshot` | Capture the screen as base64 PNG |
+| `move_mouse` | Move cursor to (x, y) |
+| `click` | Left / right / middle click at (x, y) |
+| `double_click` | Double-click at (x, y) |
+| `scroll` | Scroll up/down at (x, y) |
+| `type_text` | Type a string at the cursor |
+| `press_key` | Press a key (enter, escape, tab, …) |
+| `hotkey` | Press a keyboard shortcut (ctrl+c, …) |
+| `run_shell_command` | Execute a shell command |
+| `get_screen_size` | Return screen resolution |
+
+---
+
+## Safety
+
+- **`ATLAS_SAFE_MODE=true`** (default) – the agent confirms before destructive
+  actions.
+- **`PYAUTOGUI_PAUSE`** – injects a configurable delay between GUI actions
+  (default 0.5 s) to prevent runaway automation.
+- **PyAutoGUI FAILSAFE** – move the mouse to the top-left corner of the screen
+  at any time to immediately abort the agent.
+
+---
+
+## Docker
+
+Build and run ATLAS in a container:
+
+```bash
+docker build -t atlas .
+docker run --env-file .env atlas
+```
+
+See `deployment/README.md` for more details.
+
+---
+
+## Development
+
+```bash
+# Quick smoke test (no OpenAI key required)
+python -c "from atlas.config import load_config; print(load_config())"
+```
+
+Pull requests are welcome!
