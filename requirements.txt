@@ -7,6 +7,7 @@ flask>=3.1.0
 # OCR
 Pillow>=12.1.1
 pytesseract>=0.3.13
+easyocr>=1.7.2
 # OpenAI-compatible API support (Ollama, LM Studio, etc.)
 openai>=1.109.1
 # TTS backends (install at least one)
