@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ultron.tools import ToolRegistry
 
@@ -22,8 +22,10 @@ def _resolve(base: Path, user_path: str) -> Path:
     return resolved
 
 
-def register_fs_tools(registry: ToolRegistry, root: Path = _DEFAULT_ROOT) -> None:
+def register_fs_tools(registry: ToolRegistry, root: Optional[Path] = None) -> None:
     """Register all file-system tools into *registry*."""
+
+    root_path = Path(os.environ.get("FS_ROOT", str(root or _DEFAULT_ROOT)))
 
     @registry.register(
         name="fs_list",
@@ -39,7 +41,7 @@ def register_fs_tools(registry: ToolRegistry, root: Path = _DEFAULT_ROOT) -> Non
         },
     )
     def fs_list(path: str = ".") -> Dict[str, Any]:
-        target = _resolve(root, path)
+        target = _resolve(root_path, path)
         if not target.exists():
             raise FileNotFoundError(f"Path not found: {path}")
         entries: List[Dict[str, Any]] = []
@@ -69,7 +71,7 @@ def register_fs_tools(registry: ToolRegistry, root: Path = _DEFAULT_ROOT) -> Non
         },
     )
     def fs_read(path: str) -> str:
-        target = _resolve(root, path)
+        target = _resolve(root_path, path)
         if not target.is_file():
             raise FileNotFoundError(f"File not found: {path}")
         return target.read_text(errors="replace")
@@ -93,7 +95,7 @@ def register_fs_tools(registry: ToolRegistry, root: Path = _DEFAULT_ROOT) -> Non
         },
     )
     def fs_write(path: str, content: str) -> str:
-        target = _resolve(root, path)
+        target = _resolve(root_path, path)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content)
         return f"Written {len(content)} bytes to {target}"
@@ -113,7 +115,7 @@ def register_fs_tools(registry: ToolRegistry, root: Path = _DEFAULT_ROOT) -> Non
         },
     )
     def fs_delete(path: str) -> str:
-        target = _resolve(root, path)
+        target = _resolve(root_path, path)
         if not target.is_file():
             raise FileNotFoundError(f"File not found: {path}")
         target.unlink()
@@ -134,6 +136,6 @@ def register_fs_tools(registry: ToolRegistry, root: Path = _DEFAULT_ROOT) -> Non
         },
     )
     def fs_mkdir(path: str) -> str:
-        target = _resolve(root, path)
+        target = _resolve(root_path, path)
         target.mkdir(parents=True, exist_ok=True)
         return f"Created directory {target}"

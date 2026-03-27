@@ -116,6 +116,13 @@ class TestFsTools:
         r.call_tool("fs_mkdir", path="new/nested/dir")
         assert (tmp / "new" / "nested" / "dir").is_dir()
 
+    def test_fs_root_env_override(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("FS_ROOT", str(tmp_path))
+        r = ToolRegistry()
+        register_fs_tools(r)
+        r.call_tool("fs_write", path="env_root.txt", content="hello")
+        assert (tmp_path / "env_root.txt").read_text() == "hello"
+
     def test_path_traversal_blocked(self, registry):
         r, _ = registry
         with pytest.raises(PermissionError):
