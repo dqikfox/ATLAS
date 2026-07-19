@@ -83,8 +83,8 @@ def _build_system_prompt() -> str:
     tools = registry.list_tools()
     if not tools:
         return _SYSTEM_PROMPT_BASE
-    desc = registry.get_tools_description()
-    return _SYSTEM_PROMPT_BASE + f"\n\nAvailable tools:\n{desc}"
+    tools_description = registry.get_tools_description()
+    return _SYSTEM_PROMPT_BASE + f"\n\nAvailable tools:\n{tools_description}"
 
 
 def _llm_complete(messages: List[Dict[str, Any]], stream: bool = False) -> Any:
@@ -144,24 +144,24 @@ def _run_tool_loop(messages: List[Dict[str, Any]], max_rounds: int = 5) -> Dict[
     used_tools: List[Dict[str, Any]] = []
 
     for _ in range(max_rounds):
-        raw = _llm_complete(messages, stream=False)
-        if not isinstance(raw, str):
-            raw = str(raw)
+        llm_response = _llm_complete(messages, stream=False)
+        if not isinstance(llm_response, str):
+            llm_response = str(llm_response)
 
         # Attempt to parse a tool call.
         tool_call: Optional[Dict[str, Any]] = None
-        stripped = raw.strip()
-        if stripped.startswith("{"):
+        stripped_response = llm_response.strip()
+        if stripped_response.startswith("{"):
             try:
-                parsed = json.loads(stripped)
-                if "tool" in parsed:
-                    tool_call = parsed
+                parsed_json = json.loads(stripped_response)
+                if "tool" in parsed_json:
+                    tool_call = parsed_json
             except json.JSONDecodeError:
                 pass
 
         if tool_call is None:
             # Normal text reply – we're done.
-            return {"content": raw, "tools_used": used_tools}
+            return {"content": llm_response, "tools_used": used_tools}
 
         # Execute the tool.
         tool_name = tool_call["tool"]
@@ -176,7 +176,7 @@ def _run_tool_loop(messages: List[Dict[str, Any]], max_rounds: int = 5) -> Dict[
 
         # Feed the result back into the conversation.
         messages = messages + [
-            {"role": "assistant", "content": raw},
+            {"role": "assistant", "content": llm_response},
             {
                 "role": "user",
                 "content": f"[Tool result for {tool_name}]\n{result_str}",
@@ -184,10 +184,10 @@ def _run_tool_loop(messages: List[Dict[str, Any]], max_rounds: int = 5) -> Dict[
         ]
 
     # Max rounds reached – get a final answer.
-    raw = _llm_complete(messages, stream=False)
-    if not isinstance(raw, str):
-        raw = str(raw)
-    return {"content": raw, "tools_used": used_tools}
+    llm_response = _llm_complete(messages, stream=False)
+    if not isinstance(llm_response, str):
+        llm_response = str(llm_response)
+    return {"content": llm_response, "tools_used": used_tools}
 
 
 # ---------------------------------------------------------------------------

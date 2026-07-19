@@ -1,3 +1,11 @@
+"""Configuration loader for ATLAS.
+
+Reads the base64-encoded JSON configuration file (``ultron_config.json``)
+and returns its contents as a plain Python dictionary.  The encoding keeps
+credentials and model paths out of plain-text version control while still
+being easily editable via a one-liner re-encode command.
+"""
+
 import base64
 import json
 from pathlib import Path

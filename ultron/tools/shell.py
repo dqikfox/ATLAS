@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional
 from ultron.tools import ToolRegistry
 
 # Commands that are always blocked regardless of configuration.
-_BLOCKED_COMMANDS: List[str] = [
+_BLOCKED_COMMAND_PATTERNS: List[str] = [
     "rm -rf /",
     "dd if=",
     "mkfs",
@@ -22,14 +22,14 @@ _BLOCKED_COMMANDS: List[str] = [
 ]
 
 # Set ATLAS_SHELL_UNRESTRICTED=1 to disable the block-list check.
-_UNRESTRICTED = os.environ.get("ATLAS_SHELL_UNRESTRICTED", "0") == "1"
+_SHELL_UNRESTRICTED_MODE = os.environ.get("ATLAS_SHELL_UNRESTRICTED", "0") == "1"
 
 
 def _is_blocked(command: str) -> bool:
-    if _UNRESTRICTED:
+    if _SHELL_UNRESTRICTED_MODE:
         return False
-    cmd_lower = command.lower()
-    return any(blocked in cmd_lower for blocked in _BLOCKED_COMMANDS)
+    normalized_command = command.lower()
+    return any(blocked in normalized_command for blocked in _BLOCKED_COMMAND_PATTERNS)
 
 
 def _run(command: str, timeout: int = 30, cwd: Optional[str] = None) -> Dict[str, Any]:

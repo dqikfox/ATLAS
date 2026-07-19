@@ -67,7 +67,7 @@ class ToolRegistry:
         lines: List[str] = []
         for tool in self._tools.values():
             lines.append(f"- **{tool.name}**: {tool.description}")
-            for pname, pinfo in tool.parameters.get("properties", {}).items():
-                pdesc = pinfo.get("description", "")
-                lines.append(f"    `{pname}`: {pdesc}")
+            for param_name, param_info in tool.parameters.get("properties", {}).items():
+                param_description = param_info.get("description", "")
+                lines.append(f"    `{param_name}`: {param_description}")
         return "\n".join(lines)

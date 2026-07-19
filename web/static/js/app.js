@@ -28,6 +28,7 @@ function saveSettings() {
 }
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
+/** @param {string} id - Element ID to look up @returns {HTMLElement} */
 const $ = (id) => document.getElementById(id);
 
 const chatMessages  = $("chat-messages");
@@ -84,13 +85,13 @@ function setupEventListeners() {
   attachInput.addEventListener("change", handleAttach);
 
   // Sidebar tabs
-  document.querySelectorAll(".sidebar-tab").forEach((tab) => {
-    tab.addEventListener("click", () => switchSidebarTab(tab.dataset.tab));
+  document.querySelectorAll(".sidebar-tab").forEach((tabElement) => {
+    tabElement.addEventListener("click", () => switchSidebarTab(tabElement.dataset.tab));
   });
 
   // Right panel tabs
-  document.querySelectorAll(".right-tab").forEach((tab) => {
-    tab.addEventListener("click", () => switchRightTab(tab.dataset.tab));
+  document.querySelectorAll(".right-tab").forEach((tabElement) => {
+    tabElement.addEventListener("click", () => switchRightTab(tabElement.dataset.tab));
   });
 
   // Sidebar / right panel toggle
@@ -402,9 +403,9 @@ function speakText(text) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: plain }),
     })
-      .then((r) => r.blob())
-      .then((blob) => {
-        const url = URL.createObjectURL(blob);
+      .then((ttsResponse) => ttsResponse.blob())
+      .then((audioBlob) => {
+        const url = URL.createObjectURL(audioBlob);
         const audio = new Audio(url);
         audio.onended = () => URL.revokeObjectURL(url);
         audio.play();
@@ -519,13 +520,13 @@ async function openFileModal(dir, filename) {
   saveBtn.className = "panel-btn primary";
   saveBtn.textContent = "Save";
   saveBtn.addEventListener("click", async () => {
-    const res2 = await fetch("/api/fs/write", {
+    const saveResponse = await fetch("/api/fs/write", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path, content: textarea.value }),
     });
-    const d2 = await res2.json();
-    showToast(d2.message || d2.error || "Saved");
+    const saveResponseData = await saveResponse.json();
+    showToast(saveResponseData.message || saveResponseData.error || "Saved");
     closeModal();
   });
 
@@ -553,13 +554,13 @@ function setupOcrDrop() {
     if (file && file.type.startsWith("image/")) loadImageIntoOcr(file);
   });
   ocrDropZone.addEventListener("click", () => {
-    const inp = document.createElement("input");
-    inp.type = "file";
-    inp.accept = "image/*";
-    inp.onchange = (e) => {
+    const filePickerInput = document.createElement("input");
+    filePickerInput.type = "file";
+    filePickerInput.accept = "image/*";
+    filePickerInput.onchange = (e) => {
       if (e.target.files[0]) loadImageIntoOcr(e.target.files[0]);
     };
-    inp.click();
+    filePickerInput.click();
   });
 }
 
@@ -633,12 +634,12 @@ function applySettings() {
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchSidebarTab(tab) {
-  document.querySelectorAll(".sidebar-tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === tab));
+  document.querySelectorAll(".sidebar-tab").forEach((tabElement) => tabElement.classList.toggle("active", tabElement.dataset.tab === tab));
   document.querySelectorAll(".sidebar-panel").forEach((p) => p.classList.toggle("active", p.id === `panel-${tab}`));
 }
 
 function switchRightTab(tab) {
-  document.querySelectorAll(".right-tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === tab));
+  document.querySelectorAll(".right-tab").forEach((tabElement) => tabElement.classList.toggle("active", tabElement.dataset.tab === tab));
   document.querySelectorAll(".right-panel-body").forEach((p) => p.classList.toggle("active", p.id === `rpanel-${tab}`));
 }
 
