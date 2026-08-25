@@ -208,3 +208,51 @@ class TestFlaskApp:
         r = flask_client.get(f"/api/chat/stream?messages={msgs}&use_tools=false")
         assert r.status_code == 200
         assert r.content_type.startswith("text/event-stream")
+
+# ── Formatting tools ───────────────────────────────────────────────────────────
+
+
+class TestFormatLlamaPrompt:
+    def test_format_empty_messages(self):
+        from web.app import _format_llama_prompt
+        messages = []
+        result = _format_llama_prompt(messages)
+        assert result == ""
+
+    def test_format_system_message(self):
+        from web.app import _format_llama_prompt
+        messages = [{"role": "system", "content": "You are a helpful assistant."}]
+        result = _format_llama_prompt(messages)
+        expected = "<<SYS>>\nYou are a helpful assistant.\n<</SYS>>\n\n"
+        assert result == expected
+
+    def test_format_user_message(self):
+        from web.app import _format_llama_prompt
+        messages = [{"role": "user", "content": "Hello!"}]
+        result = _format_llama_prompt(messages)
+        expected = "[INST] Hello! [/INST]\n"
+        assert result == expected
+
+    def test_format_assistant_message(self):
+        from web.app import _format_llama_prompt
+        messages = [{"role": "assistant", "content": "Hi there!"}]
+        result = _format_llama_prompt(messages)
+        expected = "Hi there!\n"
+        assert result == expected
+
+    def test_format_mixed_messages(self):
+        from web.app import _format_llama_prompt
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Hello!"},
+            {"role": "assistant", "content": "Hi there!"},
+            {"role": "user", "content": "How are you?"}
+        ]
+        result = _format_llama_prompt(messages)
+        expected = (
+            "<<SYS>>\nYou are a helpful assistant.\n<</SYS>>\n\n"
+            "[INST] Hello! [/INST]\n"
+            "Hi there!\n"
+            "[INST] How are you? [/INST]\n"
+        )
+        assert result == expected

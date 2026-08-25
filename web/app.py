@@ -125,17 +125,17 @@ def _llm_complete(messages: List[Dict[str, Any]], stream: bool = False) -> Any:
 
 
 def _format_llama_prompt(messages: List[Dict[str, Any]]) -> str:
+    """Format messages into a LLaMA-style prompt string."""
     prompt = ""
     for msg in messages:
         role = msg["role"]
         content = msg["content"]
         if role == "system":
-            prompt += f"<|system|>\n{content}\n"
+            prompt += f"<<SYS>>\n{content}\n<</SYS>>\n\n"
         elif role == "user":
-            prompt += f"<|user|>\n{content}\n"
+            prompt += f"[INST] {content} [/INST]\n"
         elif role == "assistant":
-            prompt += f"<|assistant|>\n{content}\n"
-    prompt += "<|assistant|>\n"
+            prompt += f"{content}\n"
     return prompt
 
 
