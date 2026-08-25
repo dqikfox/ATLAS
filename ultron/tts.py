@@ -13,26 +13,39 @@ import os
 import tempfile
 from pathlib import Path
 
+import threading
+
+_pyttsx3_engine = None
+_pyttsx3_lock = threading.Lock()
 
 def _synth_pyttsx3(text: str, rate: int = 175, volume: float = 0.9) -> bytes:
     import pyttsx3  # type: ignore
+    global _pyttsx3_engine
 
-    engine = pyttsx3.init()
-    engine.setProperty("rate", rate)
-    engine.setProperty("volume", volume)
+    with _pyttsx3_lock:
+        if _pyttsx3_engine is None:
+            _pyttsx3_engine = pyttsx3.init()
 
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-        tmp_path = tmp.name
+        engine = _pyttsx3_engine
+        engine.setProperty("rate", rate)
+        engine.setProperty("volume", volume)
 
-    try:
-        engine.save_to_file(text, tmp_path)
-        engine.runAndWait()
-        return Path(tmp_path).read_bytes()
-    finally:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            tmp_path = tmp.name
+
         try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
+            engine.save_to_file(text, tmp_path)
+            engine.runAndWait()
+            return Path(tmp_path).read_bytes()
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+
+
+
 
 
 def _synth_gtts(text: str) -> bytes:
