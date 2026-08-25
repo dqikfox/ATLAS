@@ -44,12 +44,13 @@ def register_fs_tools(registry: ToolRegistry, root: Path = _DEFAULT_ROOT) -> Non
             raise FileNotFoundError(f"Path not found: {path}")
         entries: List[Dict[str, Any]] = []
         for item in sorted(target.iterdir()):
+            item_stat = item.stat()
             entries.append(
                 {
                     "name": item.name,
                     "type": "directory" if item.is_dir() else "file",
-                    "size": item.stat().st_size if item.is_file() else None,
-                    "modified": item.stat().st_mtime,
+                    "size": item_stat.st_size if item.is_file() else None,
+                    "modified": item_stat.st_mtime,
                 }
             )
         return {"path": str(target), "entries": entries}
