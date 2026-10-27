@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 from typing import Any, Dict, List, Optional
 
 from ultron.tools import ToolRegistry
@@ -32,13 +33,13 @@ def _is_blocked(command: str) -> bool:
     return any(blocked in normalized_command for blocked in _BLOCKED_COMMAND_PATTERNS)
 
 
-def _run(command: str, timeout: int = 30, cwd: Optional[str] = None) -> Dict[str, Any]:
-    if _is_blocked(command):
+def _run(command: str | list[str], timeout: int = 30, cwd: Optional[str] = None) -> Dict[str, Any]:
+    if _is_blocked(command if isinstance(command, str) else " ".join(command)):
         return {"error": "Command blocked by safety policy.", "stdout": "", "stderr": "", "returncode": -1}
     try:
         result = subprocess.run(
             command,
-            shell=True,
+            shell=isinstance(command, str),
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -98,4 +99,4 @@ def register_shell_tools(registry: ToolRegistry) -> None:
         },
     )
     def python_eval(code: str) -> Dict[str, Any]:
-        return _run(f'python3 -c {__import__("shlex").quote(code)}', timeout=30)
+        return _run([sys.executable, "-c", code], timeout=30)
