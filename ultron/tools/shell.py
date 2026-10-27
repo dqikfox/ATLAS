@@ -9,12 +9,13 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 from typing import Any, Dict, List, Optional
 
 from ultron.tools import ToolRegistry
 
 # Commands that are always blocked regardless of configuration.
-_BLOCKED_COMMANDS: List[str] = [
+_BLOCKED_COMMAND_PATTERNS: List[str] = [
     "rm -rf /",
     "dd if=",
     "mkfs",
@@ -22,23 +23,23 @@ _BLOCKED_COMMANDS: List[str] = [
 ]
 
 # Set ATLAS_SHELL_UNRESTRICTED=1 to disable the block-list check.
-_UNRESTRICTED = os.environ.get("ATLAS_SHELL_UNRESTRICTED", "0") == "1"
+_SHELL_UNRESTRICTED_MODE = os.environ.get("ATLAS_SHELL_UNRESTRICTED", "0") == "1"
 
 
 def _is_blocked(command: str) -> bool:
-    if _UNRESTRICTED:
+    if _SHELL_UNRESTRICTED_MODE:
         return False
-    cmd_lower = command.lower()
-    return any(blocked in cmd_lower for blocked in _BLOCKED_COMMANDS)
+    normalized_command = command.lower()
+    return any(blocked in normalized_command for blocked in _BLOCKED_COMMAND_PATTERNS)
 
 
-def _run(command: str, timeout: int = 30, cwd: Optional[str] = None) -> Dict[str, Any]:
-    if _is_blocked(command):
+def _run(command: str | list[str], timeout: int = 30, cwd: Optional[str] = None) -> Dict[str, Any]:
+    if _is_blocked(command if isinstance(command, str) else " ".join(command)):
         return {"error": "Command blocked by safety policy.", "stdout": "", "stderr": "", "returncode": -1}
     try:
         result = subprocess.run(
             command,
-            shell=True,
+            shell=isinstance(command, str),
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -98,4 +99,4 @@ def register_shell_tools(registry: ToolRegistry) -> None:
         },
     )
     def python_eval(code: str) -> Dict[str, Any]:
-        return _run(f'python3 -c {__import__("shlex").quote(code)}', timeout=30)
+        return _run([sys.executable, "-c", code], timeout=30)
