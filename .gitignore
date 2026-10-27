@@ -26,3 +26,22 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+.Python
+
+# Environments
+.env/
+
+# pip stray files (created when using pip install pkg>=version syntax incorrectly)
+=*
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDEs
+
+# Models (large binary files)
+models/
+
+# macOS
